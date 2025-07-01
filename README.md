@@ -8,6 +8,9 @@ Live: [https://www.smartenv.ca/](https://www.smartenv.ca/)
 
 **SmartEnv** is an integrated IoT platform for real-time monitoring and visualization of indoor environmental quality, including particulate matter (PM), air quality metrics, and thermal imaging. The system is designed to connect multiple Raspberry Pi-based sensor devices to a centralized backend for data aggregation, storage, and analysis.
 
+![Website Screenshot](https://github.com/Nijaoui-Wassim/airquality-thermal-platform/blob/main/sampleScreenshot.jpg?raw=true)
+
+
 Key features include:
 
 - **Real-time Data Ingestion:** Collects PM data, AQ data, images, and thermal images from distributed devices.
@@ -27,19 +30,20 @@ Key features include:
 - **Deployment:** AWS EC2 (Amazon Linux), Nginx reverse proxy, Certbot/Let’s Encrypt for HTTPS
 - **Domain:** [https://www.smartenv.ca/](https://www.smartenv.ca/)
 
+![Website Screenshot](https://github.com/Nijaoui-Wassim/airquality-thermal-platform/blob/main/simplifiedArch.jpg?raw=true)
+
 ---
 
 ## Quick Start
 
 1. Clone this repo:
    ```bash
-   git clone https://github.com/yourusername/smartenv-backend.git
+   git clone https://github.com/Nijaoui-Wassim/airquality-thermal-platform.git
    ```
 2. Set up your virtual environment and install requirements:
    ```bash
    python3 -m venv venv
    source venv/bin/activate
-   pip install -r requirements.txt
    ```
 3. Apply migrations and create a superuser:
    ```bash
@@ -54,8 +58,6 @@ Key features include:
    ```bash
    gunicorn --bind 127.0.0.1:8000 mybackend.wsgi:application
    ```
-
-*For production, see **`deployment.md`** or the wiki for full AWS/Nginx setup instructions.*
 
 ---
 
@@ -73,8 +75,8 @@ This project is licensed under the MIT License.
 
 ## Author
 
-[Your Name or Organization]\
-Contact: [contact@smartenv.ca](mailto\:contact@smartenv.ca)
+Wassim Nijaoui\
+Contact: [wassimnijaoui@gmail.com](mailto\:wassimnijaoui@gmail.com)
 
 ---
 
