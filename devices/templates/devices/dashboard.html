@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <h1>Dashboard</h1>
+    </div>
+    <div class="col-auto">
+        <form class="row row-cols-lg-auto g-2 align-items-center" method="get">
+            <div class="col">
+                <select name="room" class="form-select">
+                    <option value="all" {% if selected_room == "all" %}selected{% endif %}>All Rooms</option>
+                    {% for room in rooms %}
+                        <option value="{{ room.id }}" {% if room.id|stringformat:"s" == selected_room %}selected{% endif %}>{{ room.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <select name="device" class="form-select">
+                    <option value="all" {% if selected_device == "all" %}selected{% endif %}>All Devices</option>
+                    {% for device in devices %}
+                        <option value="{{ device.id }}" {% if device.id|stringformat:"s" == selected_device %}selected{% endif %}>{{ device.serial_number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Chart Section -->
+    <div class="row">
+        <div class="card shadow">
+            <div class="card-header">
+                <b>Measurement Trends</b>
+            </div>
+            <div class="card-body">
+                <div id="chart"></div>
+            </div>
+        </div>
+    </div>
+    <!-- Raw Data Table Section -->
+    <div class="row">
+        <div class="card shadow">
+            <div class="card-header">
+                <b>Latest Measurements</b>
+            </div>
+            <div class="card-body table-responsive" style="max-height: 600px; overflow-y: auto;">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Room</th>
+                            <th>Device</th>
+                            <th>PM10</th>
+                            <th>PM2.5</th>
+                            <th>PM1</th>
+                            <th>Temp</th>
+                            <th>Humid</th>
+                            <th>CO₂</th>
+                            <th>VOC</th>
+                            <th>Images</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in measurements %}
+                        <tr>
+                            <td>{{ m.timestamp|date:"Y-m-d H:i:s" }}</td>
+                            <td>{{ m.unit.room.name }}</td>
+                            <td>{{ m.unit.serial_number }}</td>
+                            <td>{{ m.pm_10_value }}</td>
+                            <td>{{ m.pm_2_5_value }}</td>
+                            <td>{{ m.pm_1_value }}</td>
+                            <td>{{ m.temperature }}</td>
+                            <td>{{ m.humidity }}</td>
+                            <td>{{ m.co2_value }}</td>
+                            <td>{{ m.voc_value }}</td>
+                            <td>
+                              <button type="button" class="btn btn-outline-primary btn-sm show-images-btn"
+                                data-img-url="{% if m.image %}{{ m.image.url }}{% endif %}"
+                                data-thermal-url="{% if m.thermal_image %}{{ m.thermal_image.url }}{% endif %}"
+                                data-bs-toggle="modal"
+                                data-bs-target="#imageModal">
+                                Images
+                              </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Modal for Images -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="imageModalLabel">Measurement Images</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body d-flex justify-content-evenly">
+        <div>
+          <h6>Regular Image</h6>
+          <img id="modal-regular-image" src="" alt="No Image" class="img-fluid border" style="max-height:250px;">
+        </div>
+        <div>
+          <h6>Thermal Image</h6>
+          <img id="modal-thermal-image" src="" alt="No Image" class="img-fluid border" style="max-height:250px;">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Plotly Chart Script -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    // Prepare arrays for plotting
+    var num_points = {{ plot_data|length }};
+    var indices = Array.from({length: num_points}, (v, k) => k + 1);  // 1, 2, ..., N
+    var timestamps = [{% for m in plot_data %}'{{ m.timestamp|date:"Y-m-d H:i:s" }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+    var pm10 = [{% for m in plot_data %}{{ m.pm_10_value }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    var pm25 = [{% for m in plot_data %}{{ m.pm_2_5_value }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    var pm1 = [{% for m in plot_data %}{{ m.pm_1_value }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    var temperature = [{% for m in plot_data %}{{ m.temperature }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    var humidity = [{% for m in plot_data %}{{ m.humidity }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    // Helper function to format hover text with timestamp and index
+    function hoverText(arr, valueLabel) {
+        return indices.map((idx, i) =>
+            `#${idx}<br>Time: ${timestamps[i]}<br>${valueLabel}: ${arr[i]}`
+        );
+    }
+
+    var traces = [
+        {
+            x: indices,
+            y: pm10,
+            mode: 'lines+markers',
+            name: 'PM10',
+            text: hoverText(pm10, 'PM10'),
+            hoverinfo: 'text'
+        },
+        {
+            x: indices,
+            y: pm25,
+            mode: 'lines+markers',
+            name: 'PM2.5',
+            text: hoverText(pm25, 'PM2.5'),
+            hoverinfo: 'text'
+        },
+        {
+            x: indices,
+            y: pm1,
+            mode: 'lines+markers',
+            name: 'PM1',
+            text: hoverText(pm1, 'PM1'),
+            hoverinfo: 'text'
+        },
+        {
+            x: indices,
+            y: temperature,
+            mode: 'lines+markers',
+            name: 'Temp (°C)',
+            text: hoverText(temperature, 'Temp'),
+            hoverinfo: 'text'
+        },
+        {
+            x: indices,
+            y: humidity,
+            mode: 'lines+markers',
+            name: 'Humidity (%)',
+            text: hoverText(humidity, 'Humidity'),
+            hoverinfo: 'text'
+        }
+    ];
+
+    Plotly.newPlot('chart', traces, {
+        title: 'Last ' + num_points + ' Measurements',
+        margin: { t: 40 },
+        legend: { orientation: "h" },
+        xaxis: {
+            title: "Sample Number (most recent right)",
+            tickmode: "array",
+            tickvals: indices,
+            ticktext: timestamps,
+            tickangle: 60,
+            showticklabels: false // Set true to show time labels (can get crowded)
+        },
+        yaxis: { title: "Value" },
+        hovermode: "closest"
+    });
+</script>
+
+
+<!-- Script for Image Modal Functionality -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const regularImg = document.getElementById('modal-regular-image');
+  const thermalImg = document.getElementById('modal-thermal-image');
+
+  document.querySelectorAll('.show-images-btn').forEach(btn => {
+    btn.addEventListener('click', function(event) {
+      // Set images or fallback
+      const imgUrl = btn.getAttribute('data-img-url');
+      const thermalUrl = btn.getAttribute('data-thermal-url');
+      regularImg.src = imgUrl || '';
+      thermalImg.src = thermalUrl || '';
+      regularImg.alt = imgUrl ? 'Regular Image' : 'No Image';
+      thermalImg.alt = thermalUrl ? 'Thermal Image' : 'No Image';
+    });
+  });
+});
+</script>
+{% endblock %}

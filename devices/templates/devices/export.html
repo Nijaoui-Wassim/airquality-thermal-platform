@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Export Data{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Export Measurements</h2>
+  <form method="get" class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="form-label">Rooms</label>
+      <select name="rooms" class="form-select" multiple>
+        {% for room in rooms %}
+          <option value="{{ room.id }}" {% if room.id in selected_rooms %}selected{% endif %}>{{ room.name }}</option>
+        {% endfor %}
+      </select>
+      <div class="form-text">Ctrl+Click to select multiple</div>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Devices</label>
+      <select name="devices" class="form-select" multiple>
+        {% for device in devices %}
+          <option value="{{ device.id }}" {% if device.id in selected_devices %}selected{% endif %}>{{ device.serial_number }}</option>
+        {% endfor %}
+      </select>
+      <div class="form-text">Ctrl+Click to select multiple</div>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Start Date</label>
+      <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">End Date</label>
+      <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button type="submit" name="export" value="csv" class="btn btn-success w-100">
+        Download CSV
+      </button>
+    </div>
+  </form>
+  <p><small>Select options and click "Download CSV". Leave filters blank for all data.</small></p>
+</div>
+{% endblock %}
